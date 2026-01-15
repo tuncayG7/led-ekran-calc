@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>LED Ekran Hesaplayıcı (LED Wall Central Benzeri)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#f7f9fc;--card:#fff;--accent:#0066ff;--text:#222}
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);padding:1rem}
+header{background:var(--card);padding:1rem;border-radius:8px;margin-bottom:1rem;text-align:center}
+#adHead{min-height:90px;background:#eef;border:dashed 2px #ccd;line-height:90px;color:#556;font-size:12px}
+h1{margin:0 0 .5rem;font-size:1.4rem}
+button{cursor:pointer;border:none;border-radius:4px;padding:.6rem 1rem;background:var(--accent);color:#fff;font-size:1rem}
+button:hover{filter:brightness(1.1)}
+label{display:block;margin:.6rem 0 .2rem;font-weight:600}
+input,select{width:100%;padding:.55rem;border:1px solid #bbb;border-radius:4px}
+.card{background:var(--card);padding:1rem;border-radius:8px;margin-bottom:1rem}
+.row{display:flex;gap:1rem;flex-wrap:wrap}
+.col{flex:1 1 220px}
+#summary{background:var(--card);padding:1rem;border-radius:8px;position:sticky;top:.5rem}
+table{width:100%;border-collapse:collapse;margin-top:.5rem}
+th,td{padding:.4rem;text-align:left;border-bottom:1px solid #e0e0e0}
+th{background:#f1f5f9}
+@media print{header,#adHead,.noPrint{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>LED Ekran Hesaplayıcı</h1>
+  <div id="adHead">Reklam Alanı – 728×90</div>
+</header>
+
+<div class="row">
+  <!-- SOL: Form -->
+  <div class="col">
+    <div class="card">
+      <h3>1) Piksel Aralığı Seçin</h3>
+      <label>Modül</label>
+      <select id="modul"></select>
+    </div>
+
+    <div class="card">
+      <h3>2) Ekran Boyutu</h3>
+      <label>En (ft)</label><input type="number" id="enFt" min="1" step="0.1" value="10">
+      <label>Boy (ft)</label><input type="number" id="boyFt" min="1" step="0.1" value="6">
+      <button id="addWall">Add Wall</button>
+    </div>
+
+    <div class="card">
+      <h3>3) Opsiyonlar</h3>
+      <label>Kabin Tipi</label>
+      <select id="kabin">
+        <option value="indoor">İç Mekân</option>
+        <option value="outdoor">Dış Mekân</option>
+      </select>
+      <label>Bakım Yeri</label>
+      <select id="servis">
+        <option value="front">Önden</option>
+        <option value="rear">Arkadan</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- SAĞ: Özet -->
+  <div class="col" id="summary">
+    <h3>Toplam Özet</h3>
+    <table>
+      <tr><td>Toplam Alan</td><td id="tAlan">0 ft²</td></tr>
+      <tr><td>Kasa Sayısı</td><td id="tKasa">0</td></tr>
+      <tr><td>Modül Sayısı</td><td id="tModul">0</td></tr>
+      <tr><td>Güç (W)</td><td id="tWatt">0</td></tr>
+      <tr><td>Alış Fiyatı</td><td id="tMaliyet">$0</td></tr>
+    </table>
+    <button id="printBtn" class="noPrint">PDF / Yazdır</button>
+  </div>
+</div>
+
+<script>
+// 1) Veri tabanı (ft cinsinden)
+const DB=[
+ {pitch:1.9, px:168, py:168, mw:0.5,  mh:0.5,  watt:27, cost:140, name:"P1.9 500×500 mm"},
+ {pitch:2.6, px:124, py:124, mw:0.5,  mh:0.5,  watt:25, cost:95,  name:"P2.6 500×500 mm"},
+ {pitch:3.9, px:128, py:128, mw:0.5,  mh:0.5,  watt:23, cost:65,  name:"P3.9 500×500 mm"},
+ {pitch:4.8, px:104, py:104, mw:0.5,  mh:0.5,  watt:21, cost:55,  name:"P4.8 500×500 mm"},
+ {pitch:7.8, px:64,  py:64,  mw:0.5,  mh:0.5,  watt:18, cost:45,  name:"P7.8 500×500 mm"},
+ {pitch:10,  px:48,  py:48,  mw:0.5,  mh:0.5,  watt:16, cost:38,  name:"P10  500×500 mm"}
+];
+const $=s=>document.querySelector(s);
+const toIn=m=>m*39.3701; // metre → inç
+const toFt=m=>m*3.28084; // metre → ft
+const toM=ft=>ft/3.28084;
+
+// 2) Modül listesi doldur
+const modSel=$('#modul');
+DB.forEach((x,i)=>{
+  const op=new Option(`${x.pitch} mm – ${x.px}×${x.py} px – ${toIn(x.mw).toFixed(0)}×${toIn(x.mh).toFixed(0)} in`,i);
+  modSel.add(op);
+});
+
+// 3) Wall listesi
+let duvarlar=[];
+function hesapla(){
+  let alan=0, kasa=0, modul=0, watt=0, maliyet=0;
+  duvarlar.forEach(w=>{
+    alan+=w.alan;
+    kasa+=w.kasa;
+    modul+=w.modul;
+    watt+=w.watt;
+    maliyet+=w.maliyet;
+  });
+  $('#tAlan').textContent=alan.toFixed(1)+' ft²';
+  $('#tKasa').textContent=kasa;
+  $('#tModul').textContent=modul;
+  $('#tWatt').textContent=watt.toLocaleString()+' W';
+  $('#tMaliyet').textContent='$'+maliyet.toLocaleString();
+}
+$('#addWall').onclick=()=>{
+  const idx=+modSel.value, d=DB[idx];
+  const enFt=+$('#enFt').value, boyFt=+$('#boyFt').value;
+  const enM=toM(enFt), boyM=toM(boyFt);
+  const mx=Math.ceil(enM/d.mw), my=Math.ceil(boyM/d.mh);
+  const gercekEn=mx*d.mw, gercekBoy=my*d.mh;
+  const kasaX=Math.ceil(gercekEn/0.5), kasaY=Math.ceil(gercekBoy/0.5);
+  const kasa=kasaX*kasaY, modul=mx*my;
+  const watt=modul*d.watt, maliyet=modul*d.cost;
+  duvarlar.push({en:enFt,boy:boyFt,alan:enFt*boyFt,kasa,modul,watt,maliyet});
+  hesapla();
+};
+$('#printBtn').onclick=()=>window.print();
+// ilk yükleme
+hesapla();
+</script>
+</body>
+</html>

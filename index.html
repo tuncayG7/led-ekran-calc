@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<title>LED Ekran Hesaplayıcı – CM + Logo + Sıfırla</title>
+<title>KNEXXONS + NovaStar Tam Veri Tabanı</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 :root{--bg:#f7f9fc;--card:#fff;--accent:#0066ff;--text:#222}
@@ -29,10 +29,9 @@ th{background:#f1f5f9}
 <body>
 
 <header>
-  <!--  LOGO  -->
   <img id="logo" src="G7_logo_lacivert.png" alt="G7 Logo">
   <div>
-    <h1>LED Ekran Hesaplayıcı</h1>
+    <h1>LED Ekran Hesaplayıcı – Tam Veri Tabanı</h1>
     <div id="adHead">Reklam Alanı – 728×90</div>
   </div>
 </header>
@@ -45,21 +44,29 @@ th{background:#f1f5f9}
       <select id="mekanSec"><option value="indoor">İç Mekân</option><option value="outdoor">Dış Mekân</option></select>
     </div>
     <div class="card">
-      <h3>2) Piksel Aralığı Seçin</h3>
-      <label>Modül</label><select id="modul"></select>
+      <h3>2) Marka & Modül Seçin</h3>
+      <label>Marka / Model</label><select id="modul"></select>
     </div>
     <div class="card">
       <h3>3) Ekran Boyutu (cm)</h3>
       <label>En (cm)</label><input type="number" id="enCm" min="10" step="1" value="320">
       <label>Boy (cm)</label><input type="number" id="boyCm" min="10" step="1" value="192">
-      <button id="addWall">Add Wall</button>
-      <button id="resetBtn" style="margin-left:.5rem;background:#e53942">Sıfırla</button>
     </div>
+    <div class="card">
+      <h3>4) PSU Seçimi</h3>
+      <label>PSU Tipi</label>
+      <select id="psuSel">
+        <option value="40">5 V 40 A</option>
+        <option value="60">5 V 60 A</option>
+      </select>
+    </div>
+    <button id="addWall">Add Wall</button>
+    <button id="resetBtn" style="margin-left:.5rem;background:#e53942">Sıfırla</button>
   </div>
 
   <div class="col" id="summary">
     <h3>Teklif Özeti</h3>
-    <table id="sumTable">
+    <table id="ozetTablo">
       <thead><tr><th>Parça</th><th>Adet</th><th>Birim Fiyat</th><th>Tutar</th></tr></thead>
       <tbody></tbody>
       <tfoot style="font-weight:600"><tr><td colspan="3">TOPLAM</td><td id="grandTotal">$0</td></tr></tfoot>
@@ -69,54 +76,76 @@ th{background:#f1f5f9}
 </div>
 
 <script>
-/* ===== 1) MODÜL + NOVASTAR VERİSİ (önceki) ===== */
-const DB = [
-  {pitch:0.9, px:320, py:180, mw:30.0, mh:16.875, watt:22, cost:180, brightness:650,  type:'indoor', marka:'Qiangli', name:'P0.9 300×168.75 mm'},
-  {pitch:1.2, px:240, py:135, mw:30.0, mh:16.875, watt:20, cost:140, brightness:700,  type:'indoor', marka:'Qiangli', name:'P1.2 300×168.75 mm'},
-  {pitch:1.5, px:192, py:108, mw:30.0, mh:16.875, watt:18, cost:115, brightness:800,  type:'indoor', marka:'Qiangli', name:'P1.5 300×168.75 mm'},
-  {pitch:1.8, px:172, py:86,  mw:32.0, mh:16.0,   watt:17, cost:95,  brightness:1000, type:'indoor', marka:'Qiangli', name:'P1.8 320×160 mm'},
-  {pitch:2.0, px:160, py:80,  mw:32.0, mh:16.0,   watt:16, cost:75,  brightness:1000, type:'indoor', marka:'Qiangli', name:'P2.0 320×160 mm'},
-  {pitch:2.5, px:128, py:64,  mw:32.0, mh:16.0,   watt:15, cost:55,  brightness:1200, type:'indoor', marka:'Qiangli', name:'P2.5 320×160 mm'},
-  {pitch:3.0, px:106, py:53,  mw:32.0, mh:16.0,   watt:14, cost:48,  brightness:1200, type:'indoor', marka:'Qiangli', name:'P3.0 320×160 mm'},
-  {pitch:3.9, px:80,  py:40,  mw:32.0, mh:16.0,   watt:13, cost:38,  brightness:1100, type:'indoor', marka:'Qiangli', name:'P3.9 320×160 mm'},
-  {pitch:2.0, px:160, py:80,  mw:32.0, mh:16.0,   watt:28, cost:95,  brightness:5500, type:'outdoor', marka:'Qiangli', name:'P2.0 320×160 mm IP65'},
-  {pitch:2.5, px:128, py:64,  mw:32.0, mh:16.0,   watt:26, cost:72,  brightness:5500, type:'outdoor', marka:'Qiangli', name:'P2.5 320×160 mm IP65'},
-  {pitch:3.0, px:106, py:53,  mw:32.0, mh:16.0,   watt:24, cost:58,  brightness:6000, type:'outdoor', marka:'Qiangli', name:'P3.0 320×160 mm IP65'},
-  {pitch:4.0, px:80,  py:40,  mw:32.0, mh:16.0,   watt:22, cost:42,  brightness:5500, type:'outdoor', marka:'Qiangli', name:'P4.0 320×160 mm IP65'},
-  {pitch:5.0, px:64,  py:32,  mw:32.0, mh:16.0,   watt:20, cost:34,  brightness:6500, type:'outdoor', marka:'Qiangli', name:'P5.0 320×160 mm IP65'},
-  {pitch:6.67,px:48,  py:24,  mw:32.0, mh:16.0,   watt:18, cost:29,  brightness:7000, type:'outdoor', marka:'Qiangli', name:'P6.67 320×160 mm IP65'},
-  {pitch:8.0, px:40,  py:20,  mw:32.0, mh:16.0,   watt:16, cost:25,  brightness:7000, type:'outdoor', marka:'Qiangli', name:'P8.0 320×160 mm IP65'},
-  {pitch:10.0,px:32,  py:16,  mw:32.0, mh:16.0,   watt:14, cost:20,  brightness:7000, type:'outdoor', marka:'Qiangli', name:'P10  320×160 mm IP65'}
+/* ===== 1) TAM VERİ TABANI (KNEXXONS + NOVASTAR) ===== */
+/*  Modüller  */
+const MOD = [
+  /* Indoor SMD */
+  {pitch:1.2, px:256, py:128, mw:32.0, mh:16.0, watt:12, cost:183.68, brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D12H'},
+  {pitch:1.2, px:256, py:128, mw:32.0, mh:16.0, watt:13, cost:191.83, brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D12H-GOB'},
+  {pitch:1.5, px:208, py:104, mw:32.0, mh:16.0, watt:11, cost:111.03, brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D15H'},
+  {pitch:1.5, px:208, py:104, mw:32.0, mh:16.0, watt:12, cost:118.99, brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D15H-GOB'},
+  {pitch:1.8, px:172, py:86,  mw:32.0, mh:16.0, watt:10, cost:73.12,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D18H'},
+  {pitch:1.8, px:172, py:86,  mw:32.0, mh:16.0, watt:10, cost:60.31,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D18H-GOB'},
+  {pitch:2.0, px:160, py:80,  mw:32.0, mh:16.0, watt:10, cost:55.77,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D20H'},
+  {pitch:2.0, px:160, py:80,  mw:32.0, mh:16.0, watt:10, cost:57.16,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D2OH-GOB'},
+  {pitch:2.5, px:128, py:64,  mw:32.0, mh:16.0, watt:9,  cost:38.30,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D25H'},
+  {pitch:2.5, px:128, py:64,  mw:32.0, mh:16.0, watt:9,  cost:40.01,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D25H-GOB'},
+  {pitch:3.0, px:104, py:52,  mw:32.0, mh:16.0, watt:8,  cost:32.50,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D30H'},
+  {pitch:4.0, px:80,  py:40,  mw:32.0, mh:16.0, watt:8,  cost:28.50,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D40H'},
+  {pitch:4.0, px:80,  py:40,  mw:32.0, mh:16.0, watt:9,  cost:41.25,  brightness:800,  type:'indoor', marka:'KNEXXONS', name:'XP-D40H-GOB'},
+  /* Outdoor */
+  {pitch:4.0, px:80,  py:40,  mw:32.0, mh:16.0, watt:18, cost:45.50,  brightness:5500, type:'outdoor', marka:'KNEXXONS', name:'XP-P4-OUT'},
+  {pitch:5.0, px:64,  py:32,  mw:32.0, mh:16.0, watt:20, cost:42.00,  brightness:6000, type:'outdoor', marka:'KNEXXONS', name:'XP-P5-OUT'},
+  {pitch:2.5, px:128, py:64,  mw:32.0, mh:16.0, watt:25, cost:89.32,  brightness:5500, type:'outdoor', marka:'KNEXXONS', name:'XP-V25H (P2.5)'},
+  {pitch:3.0, px:104, py:52,  mw:32.0, mh:16.0, watt:22, cost:55.73,  brightness:6000, type:'outdoor', marka:'KNEXXONS', name:'XP-V30H (P3)'},
+  {pitch:3.0, px:104, py:52,  mw:32.0, mh:16.0, watt:22, cost:51.45,  brightness:6000, type:'outdoor', marka:'KNEXXONS', name:'XP-V30S (P3)'},
+  {pitch:4.0, px:80,  py:40,  mw:32.0, mh:16.0, watt:20, cost:32.73,  brightness:5500, type:'outdoor', marka:'KNEXXONS', name:'XP-V40H (P4)'},
+  {pitch:4.0, px:80,  py:40,  mw:32.0, mh:16.0, watt:20, cost:30.37,  brightness:5500, type:'outdoor', marka:'KNEXXONS', name:'XP-V40S (P4)'},
+  {pitch:5.0, px:64,  py:32,  mw:32.0, mh:16.0, watt:18, cost:27.87,  brightness:6500, type:'outdoor', marka:'KNEXXONS', name:'XP-V50H (P5)'},
+  {pitch:5.0, px:64,  py:32,  mw:32.0, mh:16.0, watt:18, cost:24.97,  brightness:6500, type:'outdoor', marka:'KNEXXONS', name:'XP-V50S (P5)'},
+  {pitch:6.67,px:48,  py:24,  mw:32.0, mh:16.0, watt:15, cost:28.15,  brightness:7000, type:'outdoor', marka:'KNEXXONS', name:'XP-V660H (P6.6)'},
+  {pitch:6.67,px:48,  py:24,  mw:32.0, mh:16.0, watt:15, cost:25.29,  brightness:7000, type:'outdoor', marka:'KNEXXONS', name:'XP-V660S (P6.6)'},
+  {pitch:8.0, px:40,  py:20,  mw:32.0, mh:16.0, watt:15, cost:27.15,  brightness:7000, type:'outdoor', marka:'KNEXXONS', name:'XP-V80H (P8)'},
+  {pitch:8.0, px:40,  py:20,  mw:32.0, mh:16.0, watt:15, cost:24.72,  brightness:7000, type:'outdoor', marka:'KNEXXONS', name:'XP-V80S (P8)'},
+  {pitch:10.0,px:32,  py:16,  mw:32.0, mh:16.0, watt:12, cost:27.87,  brightness:7000, type:'outdoor', marka:'KNEXXONS', name:'XP-V100H (P10)'}
 ];
 
-const NOVA = {
-  sender:    { model:'NovaStar MCTRL300', pxCap:1_300_000, cost:450 },
-  receiver:  { model:'NovaStar MRV300',   pxCap:384_000,   cost:140 },
-  processor: { model:'NovaStar VX600',    pxCap:3_900_000, cost:1_200 }
-};
+/*  Processor / Sender / Receiver / PSU fiyatları  */
+const PROC = [
+  {model:'VX400',  pxCap:1_300_000, cost:650},
+  {model:'VX600',  pxCap:2_300_000, cost:950},
+  {model:'VX1000', pxCap:3_840_000, cost:1450},
+  {model:'VX16s',  pxCap:10_400_000,cost:2800},
+  {model:'H2',     pxCap:26_000_000,cost:8244.56}
+];
+const REC  = {model:'MRV336', pxCap:32_000, cost:35};   // 1 kart 32 k px
+const SEN  = {model:'MCTRL300', pxPort:650_000, ports:2, cost:450}; // 2×650 k
+const PSU  = {40:22, 60:32};   // 5 V 40 A ve 60 A fiyatları
 
 const $ = s => document.querySelector(s);
 
-/* ==== 2) İç/Dış değişince modül listesini yenile ==== */
+/* ==== 2) Marka filtreleme ==== */
 $('#mekanSec').onchange = () => fillModules();
 function fillModules(){
   const tip = $('#mekanSec').value;
   const modSel = $('#modul');
   modSel.innerHTML = '';
-  DB.filter(m => m.type === tip).forEach((x, i) => {
-    const opt = new Option(`${x.marka} ${x.pitch} mm – ${x.px}×${x.py} px – ${x.mw}×${x.mh} cm – ${x.brightness} nit`, i);
+  MOD.filter(m => m.type === tip).forEach((x, i) => {
+    const opt = new Option(`${x.marka} ${x.name} – P${x.pitch} – ${x.px}×${x.py} px – ${x.watt} W – $${x.cost}`, i);
+    opt.dataset.idx = i;   // gerçek index
     modSel.add(opt);
   });
 }
 
-/* ==== 3) Wall ekle + NOVASTAR hesabı ==== */
+/* ==== 3) Wall ekle + doğru kart hesabı ==== */
 let duvarlar = [];
 $('#addWall').onclick = () => {
-  const tip  = $('#mekanSec').value;
-  const idx  = +$('#modul').value;
-  const d    = DB.filter(m => m.type === tip)[idx];
-  const enCm = +$('#enCm').value;
+  const tip   = $('#mekanSec').value;
+  const idx   = +$('#modul').selectedOptions[0].dataset.idx; // gerçek index
+  const d     = MOD.filter(m => m.type === tip)[idx];
+  const enCm  = +$('#enCm').value;
   const boyCm = +$('#boyCm').value;
+  const psuA  = +$('#psuSel').value;
 
   const mx = Math.ceil(enCm / d.mw);
   const my = Math.ceil(boyCm / d.mh);
@@ -124,13 +153,27 @@ $('#addWall').onclick = () => {
   const cozX = mx * d.px;
   const cozY = my * d.py;
   const toplamPx = cozX * cozY;
+  const watt = modul * d.watt;
 
-  const senderSayi    = Math.max(1, Math.ceil(toplamPx / NOVA.sender.pxCap));
-  const recvSayi      = Math.max(1, Math.ceil(toplamPx / NOVA.receiver.pxCap));
-  const processorSayi = Math.max(1, Math.ceil(toplamPx / NOVA.processor.pxCap));
+  /* 3a) Sender: 2×650 k px */
+  const senderSayi = Math.max(1, Math.ceil(toplamPx / (SEN.pxPort * SEN.ports)));
 
-  duvarlar.push({modul, cozX, cozY, bright:d.brightness, watt:modul*d.watt, maliyet:modul*d.cost,
-                 senderSayi, recvSayi, processorSayi});
+  /* 3b) Receiver: 32 k px veya 16 modül hangisi büyükse */
+  const recvByPx = Math.ceil(toplamPx / REC.pxCap);
+  const recvByMod= Math.ceil(modul / 16);
+  const recvSayi = Math.max(recvByPx, recvByMod);
+
+  /* 3c) Processor: otomatik seçim (en küçük yeterli) */
+  const proc = PROC.filter(p => p.pxCap >= toplamPx).sort((a,b)=>a.pxCap-b.pxCap)[0] || PROC[PROC.length-1];
+  const procSayi = 1;   // 1 adet yeterli (kapasite yeterli)
+
+  /* 3d) PSU: 5 V × Amper × %80 verim */
+  const psuWatt = psuA * 5 * 0.8;
+  const psuSayi = Math.max(1, Math.ceil(watt / psuWatt));
+
+  duvarlar.push({modul, cozX, cozY, bright:d.brightness, watt, maliyet:modul*d.cost,
+                 senderSayi, recvSayi, procSayi, procModel:proc.model, procCost:proc.cost,
+                 psuSayi, psuA, psuCost: PSU[psuA]});
   hesapla();
 };
 
@@ -140,12 +183,13 @@ $('#resetBtn').onclick = () => {
   hesapla();
 };
 
-/* ==== 5) Teklif tablosunu doldur ==== */
+/* ==== 5) Teklif + Toplam Çözünürlük & Piksel & Parlaklık ==== */
 function hesapla(){
-  const tbody = $('#sumTable tbody');
+  const tbody = $('#ozetTablo tbody');
   tbody.innerHTML = '';
 
-  let topMod=0, topWatt=0, topMaliyet=0, topSender=0, topRecv=0, topProc=0, cozX=0, cozY=0, bright=0;
+  let topMod=0, topWatt=0, topMaliyet=0, topSender=0, topRecv=0, topProc=0, topPsu=0,
+      cozX=0, cozY=0, bright=0, topPixels=0;
 
   duvarlar.forEach(w=>{
     topMod    += w.modul;
@@ -153,9 +197,11 @@ function hesapla(){
     topMaliyet+= w.maliyet;
     topSender += w.senderSayi;
     topRecv   += w.recvSayi;
-    topProc   += w.processorSayi;
+    topProc   += w.procSayi;
+    topPsu    += w.psuSayi;
     cozX      += w.cozX;
     cozY      += w.cozY;
+    topPixels += w.cozX * w.cozY;
     bright     = Math.max(bright, w.bright);
   });
 
@@ -163,15 +209,29 @@ function hesapla(){
     if (!adet) return '';
     const tutar = adet * bFiyat;
     topMaliyet += tutar;
-    return `<tr><td>${isim}</td><td>${adet}</td><td>$${bFiyat}</td><td>$${tutar}</td></tr>`;
+    return `<tr><td>${isim}</td><td>${adet}</td><td>$${bFiyat}</td><td>$${tutar.toFixed(2)}</td></tr>`;
   };
   if (topMod){
-    tbody.innerHTML += satir(topMod, `LED Modül (${DB.filter(m=>m.type===$('#mekanSec').value)[0].marka})`, DB.filter(m=>m.type===$('#mekanSec').value)[0].cost);
-    tbody.innerHTML += satir(topSender, NOVA.sender.model,    NOVA.sender.cost);
-    tbody.innerHTML += satir(topRecv,   NOVA.receiver.model,  NOVA.receiver.cost);
-    tbody.innerHTML += satir(topProc,   NOVA.processor.model, NOVA.processor.cost);
+    const sonModulCost = MOD.filter(m=>m.type===$('#mekanSec').value)[0].cost;
+    tbody.innerHTML += satir(topMod, `LED Modül (KNEXXONS)`, sonModulCost);
+    tbody.innerHTML += satir(topSender, `NovaStar ${SEN.model}`,    SEN.cost);
+    tbody.innerHTML += satir(topRecv,   `NovaStar ${REC.model}`,    REC.cost);
+    if (topProc) tbody.innerHTML += satir(topProc, `NovaStar ${duvarlar[0].procModel}`, duvarlar[0].procCost);
+    if (topPsu)  tbody.innerHTML += satir(topPsu,  `PSU 5 V ${duvarlar[0].psuA} A`,     duvarlar[0].psuCost);
   }
-  $('#grandTotal').textContent = '$' + topMaliyet.toLocaleString();
+  $('#grandTotal').textContent = '$' + topMaliyet.toFixed(2);
+
+  /* Bilgi satırları */
+  const infoRow = `<tr style="background:#f1f5f9;font-weight:600">
+                    <td>Toplam Çözünürlük</td><td colspan="3">${cozX.toLocaleString()} × ${cozY.toLocaleString()} px</td>
+                   </tr>
+                   <tr style="background:#f1f5f9;font-weight:600">
+                    <td>Toplam Piksel Sayısı</td><td colspan="3">${topPixels.toLocaleString()} px</td>
+                   </tr>
+                   <tr style="background:#f1f5f9;font-weight:600">
+                    <td>Toplam Parlaklık</td><td colspan="3">${bright.toLocaleString()} nit</td>
+                   </tr>`;
+  tbody.insertAdjacentHTML('beforeend', infoRow);
 }
 
 $('#printBtn').onclick = () => window.print();
